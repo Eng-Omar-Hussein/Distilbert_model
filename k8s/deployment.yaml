@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ai-model
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: ai-model
@@ -39,7 +39,10 @@ spec:
               apt-get update && apt-get install -y unzip 
               pip install --no-cache-dir gdown 
               gdown "https://drive.google.com/file/d/1152xEhIRVnQry9e1Idp0cOA4Y6Z52klS/view?usp=drive_link"
-              unzip *.zip 
+              unzip *.zip
+              pwd
+              ls -la
+              whoami
               mv content/drive/MyDrive/Roberta/DistilBERT/model/* .
               rm -rf content
               rm *.zip
