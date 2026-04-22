@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ai-model
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ai-model
@@ -41,9 +41,9 @@ spec:
               gdown "https://drive.google.com/file/d/1152xEhIRVnQry9e1Idp0cOA4Y6Z52klS/view?usp=drive_link"
               unzip *.zip
               pwd
-              ls -la
               whoami
               mv content/drive/MyDrive/Roberta/DistilBERT/model/* .
+              ls -la
               rm -rf content
               rm *.zip
               chmod -R a+r /model
