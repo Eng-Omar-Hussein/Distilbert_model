@@ -3,7 +3,7 @@
 This deployment uses an ultra-lightweight ONNX runtime instead of PyTorch, resulting in a much smaller container and faster inference speeds.
 
 ## 1. Get the Model
-Download the ONNX model files from Google Drive: `https://drive.google.com/file/d/1152xEhIRVnQry9e1Idp0cOA4Y6Z52klS/view?usp=drive_link`
+Download the ONNX model files from Google Drive: `https://drive.google.com/file/d/16yGOF0--kL3etijg-UflSbnzxpMT7Wof/view?usp=drive_link`
 Extract the contents into a folder named `model` in the root of this project.
 
 The structure must look exactly like this:
@@ -13,10 +13,8 @@ The structure must look exactly like this:
 └── model/
     ├── config.json
     ├── model.onnx
-    ├── special_tokens_map.json
     ├── tokenizer.json
-    ├── tokenizer_config.json
-    └── vocab.txt
+    └── tokenizer_config.json
 
 ## 2. Deploy with Docker
 Build the image:

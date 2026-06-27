@@ -4,4 +4,3 @@ onnxruntime
 tokenizers
 pydantic
 numpy
-python-dotenv
