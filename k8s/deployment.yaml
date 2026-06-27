@@ -1,9 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: model-api
+  labels:
+    name: model-api
+    environment: development
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-model-api
   labels:
     app: ai-model
+  namespace: model-api
 spec:
   replicas: 1
   selector:
@@ -40,7 +50,7 @@ spec:
               
               apt-get update && apt-get install -y unzip 
               pip install --no-cache-dir gdown 
-              gdown "https://drive.google.com/file/d/1152xEhIRVnQry9e1Idp0cOA4Y6Z52klS/view?usp=drive_link"
+              gdown "https://drive.google.com/file/d/16yGOF0--kL3etijg-UflSbnzxpMT7Wof/view?usp=drive_link"
               unzip *.zip
               pwd
               whoami
@@ -81,6 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-model-service
+  namespace: model-api
 spec:
   type: NodePort
   selector:

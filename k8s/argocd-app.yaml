@@ -6,12 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/Eng-Omar-Hussein/Distilbert_model.git'
+    repoURL: 'https://github.com/Abdulrahman-Mansor/Email_Body_DL_Phishing_Detection.git'
     targetRevision: HEAD
     path: k8s
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: app2
+    namespace: model-api
   syncPolicy:
     automated:
       prune: true

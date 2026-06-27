@@ -11,6 +11,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
+      - name: build main.py
+        run: |
+          python build main.py
+
       - name: Download model files
         run: |
           chmod +x downloadModel.sh
