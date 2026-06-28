@@ -54,7 +54,7 @@ spec:
               unzip *.zip
               pwd
               whoami
-              mv content/drive/MyDrive/Roberta/DistilBERT/model/* .
+              mv content/output/onnx_phishing_model/* .
               ls -la
               rm -rf content
               rm *.zip
