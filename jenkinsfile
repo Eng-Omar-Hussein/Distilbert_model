@@ -100,7 +100,7 @@ pipeline {
                 sh '''
                     . venv/bin/activate
                     pip install cyclonedx-bom
-                    cyclonedx-py environment -o sbom.json --json
+                    cyclonedx-py environment -o sbom.json --output-format json
                 '''
             }
             post { always { archiveArtifacts artifacts: 'sbom.json', allowEmptyArchive: true } }
