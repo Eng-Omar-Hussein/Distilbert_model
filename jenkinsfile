@@ -164,6 +164,50 @@ pipeline {
             }
         }
 
+        stage('Ensure DefectDojo Product/Engagement') {
+            steps {
+                script {
+                    // Check if product exists, else create it
+                    def productSearch = sh(
+                        script: """
+                            curl -s -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+                            "${DEFECTDOJO_URL}/api/v2/products/?name=${APP_NAME}"
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    def productJson = readJSON text: productSearch
+                    def productId
+
+                    if (productJson.count == 0) {
+                        def createProduct = sh(
+                            script: """
+                                curl -s -X POST "${DEFECTDOJO_URL}/api/v2/products/" \
+                                -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+                                -H "Content-Type: application/json" \
+                                -d '{"name": "${APP_NAME}", "description": "CI pipeline product", "prod_type": 1}'
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        productId = readJSON(text: createProduct).id
+                    } else {
+                        productId = productJson.results[0].id
+                    }
+
+                    // Check if engagement exists for this build, else create it
+                    def createEngagement = sh(
+                        script: """
+                            curl -s -X POST "${DEFECTDOJO_URL}/api/v2/engagements/" \
+                            -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+                            -H "Content-Type: application/json" \
+                            -d '{"name": "Build-${BUILD_NUMBER}", "product": ${productId}, "target_start": "${new Date().format('yyyy-MM-dd')}", "target_end": "${new Date().format('yyyy-MM-dd')}", "status": "In Progress"}'
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    env.DD_ENGAGEMENT_ID = readJSON(text: createEngagement).id
+                }
+            }
+        }
+
         stage('Upload Reports to DefectDojo') {
             steps {
                 script {
@@ -182,7 +226,7 @@ pipeline {
                                 -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
                                 -F "scan_type=${r.type}" \
                                 -F "file=@${r.file}" \
-                                -F "engagement=1" \
+                                -F "engagement=${env.DD_ENGAGEMENT_ID}" \
                                 -F "active=true" \
                                 -F "verified=false" || true
                             """
