@@ -61,6 +61,10 @@ def health_check():
         "target_model": "DistilBERT-v1"
     }
 
+@app.get("/health")
+async def health_check() -> dict[str, str]:
+    return {"status": "ok"}
+
 @app.post("/predict")
 def predict(payload: EmailPayload):
     if not payload.text.strip():
