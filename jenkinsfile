@@ -34,7 +34,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKERHUB_REPO}:${IMAGE_TAG} -t ${DOCKERHUB_REPO}:latest ."
+                sh "sudo docker build -t ${DOCKERHUB_REPO}:${IMAGE_TAG} -t ${DOCKERHUB_REPO}:latest ."
             }
         }
 
@@ -77,7 +77,7 @@ pipeline {
         stage('Secrets Scan - Gitleaks') {
             steps {
                 sh '''
-                    docker run --rm -v "$PWD":/repo zricethezav/gitleaks:latest \
+                    sudo docker run --rm -v "$PWD":/repo zricethezav/gitleaks:latest \
                         detect --source=/repo --report-format=json \
                         --report-path=/repo/gitleaks-report.json --no-git || true
                 '''
@@ -132,8 +132,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
-                        echo $PASS | docker login -u $USER --password-stdin
-                        docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                        echo $PASS | sudo docker login -u $USER --password-stdin
+                        sudo docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
                     '''
                 }
             }
@@ -142,8 +142,8 @@ pipeline {
         stage('Deploy to Staging (for DAST)') {
             steps {
                 sh '''
-                    docker rm -f fastapi-staging || true
-                    docker run -d --name fastapi-staging -p 8000:8000 ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                    sudo docker rm -f fastapi-staging || true
+                    sudo docker run -d --name fastapi-staging -p 8000:8000 ${DOCKERHUB_REPO}:${IMAGE_TAG}
                     sleep 10
                 '''
             }
@@ -152,7 +152,7 @@ pipeline {
         stage('DAST - OWASP ZAP') {
             steps {
                 sh '''
-                    docker run --rm --network host -v "$PWD":/zap/wrk/:rw \
+                    sudo docker run --rm --network host -v "$PWD":/zap/wrk/:rw \
                         zaproxy/zap-stable zap-baseline.py \
                         -t ${ZAP_TARGET_URL} \
                         -J zap-report.json -r zap-report.html || true
@@ -160,7 +160,7 @@ pipeline {
             }
             post {
                 always {
-                    sh 'docker rm -f fastapi-staging || true'
+                    sh 'sudo docker rm -f fastapi-staging || true'
                     archiveArtifacts artifacts: 'zap-report.*', allowEmptyArchive: true
                 }
             }
@@ -242,7 +242,7 @@ pipeline {
             )
         }
         always {
-            sh 'docker logout || true'
+            sh 'sudo docker logout || true'
             cleanWs()
         }
         failure {
