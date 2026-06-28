@@ -74,7 +74,7 @@ pipeline {
         stage('Secrets Scan - Gitleaks') {
             steps {
                 sh '''
-                    docker run --rm -v "$pwd":/repo zricethezav/gitleaks:latest \
+                    docker run --rm -v "$PWD":/repo zricethezav/gitleaks:latest \
                         detect --source=/repo --report-format=json \
                         --report-path=/repo/gitleaks-report.json --no-git || true
                 '''
@@ -147,7 +147,12 @@ pipeline {
 
         stage('DAST - OWASP ZAP') {
             steps {
-                sh 'zap-baseline.py -t ${ZAP_TARGET_URL} -J zap-report.json -r zap-report.html -I || true'
+                sh '''
+                    docker run --rm --network host -v "$PWD":/zap/wrk/:rw \
+                        zaproxy/zap-stable zap-baseline.py \
+                        -t ${ZAP_TARGET_URL} \
+                        -J zap-report.json -r zap-report.html || true
+                '''
             }
             post {
                 always {
