@@ -13,7 +13,7 @@ pipeline {
         DEFECTDOJO_TOKEN   = credentials('defectdojo-api-token')
         DTRACK_API_KEY     = credentials('dtrack-api-key')
         EMAIL_RECIPIENTS   = "omarhussein2111@gmail.com"
-        ZAP_TARGET_URL     = "http://localhost:8000"
+        ZAP_TARGET_URL     = "http://localhost:8088"
     }
 
     options {
@@ -119,13 +119,33 @@ pipeline {
         stage('Scan - Trivy (Image + FS + SBOM)') {
             steps {
                 sh '''
-                    docker run --rm -v "$PWD":/repo aquasec/trivy:latest --version
-                    docker run --rm -v "$PWD":/repo aquasec/trivy:latest \
-                        fs --format json --output trivy-fs-report.json . || true
-                    docker run --rm -v "$PWD":/repo aquasec/trivy:latest \
-                        image --format json --output trivy-image-report.json ${DOCKERHUB_REPO}:${IMAGE_TAG} || true
-                    docker run --rm -v "$PWD":/repo aquasec/trivy:latest \
-                        sbom --format json --output trivy-sbom-report.json sbom.json || true
+                    mkdir -p .trivy-cache
+
+                    # Show Trivy version
+                    docker run --rm \
+                        -v "$PWD":/repo \
+                        -v "$PWD/.trivy-cache:/root/.cache/trivy" \
+                        aquasec/trivy:latest --version
+
+                    # Filesystem Scan
+                    docker run --rm \
+                        -v "$PWD":/repo \
+                        -v "$PWD/.trivy-cache:/root/.cache/trivy" \
+                        aquasec/trivy:latest \
+                        fs \
+                        --format json \
+                        --output /repo/trivy-fs-report.json \
+                        /repo || true
+
+                    # Docker Image Scan
+                    docker run --rm \
+                        -v "$PWD":/repo \
+                        -v "$PWD/.trivy-cache:/root/.cache/trivy" \
+                        aquasec/trivy:latest \
+                        image \
+                        --format json \
+                        --output /repo/trivy-image-report.json \
+                        ${DOCKERHUB_REPO}:${IMAGE_TAG} || true
                 '''
             }
             post {
@@ -139,10 +159,10 @@ pipeline {
             steps {
                 sh '''
                     docker rm -f fastapi-staging || true
-                    docker run -d --name fastapi-staging -p 8000:8000 ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                    docker run -d --name fastapi-staging -p 8088:8000 ${DOCKERHUB_REPO}:${IMAGE_TAG}
 
                     for i in $(seq 1 20); do
-                        if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
+                        if curl -sf http://localhost:8088/docs > /dev/null 2>&1; then
                             echo "App is ready"
                             break
                         fi
@@ -250,6 +270,36 @@ pipeline {
                     -F "project=${DTRACK_PROJECT_ID}" \
                     -F "bom=@sbom.json" || true
                 """
+            }
+        }
+
+        stage('Update Manifest & Push to GitHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds',
+                    usernameVariable: 'GITHUB_USER',
+                    passwordVariable: 'GITHUB_TOKEN'
+                )]) {
+                    sh '''
+                        sed -i -E "s|(^[[:space:]]*image: )omarhussein2111/.*|\\1${DOCKERHUB_REPO}:${IMAGE_TAG}|g" k8s/deployment.yaml
+
+                        git config user.email "omarhussein2111@gmail.com"
+                        git config user.name "Eng-Omar-Hussein"
+
+                        git add k8s/deployment.yaml
+
+                        if git diff --cached --quiet; then
+                            echo "No changes to commit."
+                            exit 0
+                        fi
+
+                        git commit -m "ci: bump model-api image to ${IMAGE_TAG}"
+
+                        git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/Eng-Omar-Hussein/Distilbert_model.git
+
+                        git push origin HEAD:main
+                    '''
+                }
             }
         }
 
